@@ -1,8 +1,4 @@
 # .NET Desktop
-- task: UseDotNet@2
-  inputs:
-    packageType: 'sdk'
-    version: '4.6.1'
 # Build and run tests for .NET Desktop or Windows classic desktop solutions.
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
@@ -25,6 +21,27 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
 
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+      $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+      $componentsToAdd = @(
+        "Microsoft.Net.Component.4.6.1.SDK"
+      )
+      [string]$workloadArgs = $componentsToAdd | ForEach-Object {" --add " +  $_}
+      $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
+      $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+      if ($process.ExitCode -eq 0)
+      {
+          Write-Host "components have been successfully added"
+      }
+      else
+      {
+          Write-Host "components were not installed"
+          exit 1
+      }
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
